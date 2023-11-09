@@ -1,4 +1,7 @@
 ---
+ci:
+  autoupdate_branch: chore/pre-commit-autoupdate
+
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.4.0
@@ -46,9 +49,12 @@ repos:
       - id: black
         language: python
   - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.35.0
+    rev: v0.37.0
     hooks:
       - id: markdownlint
+        args:
+          - --disable
+          - MD013
   - repo: https://github.com/editorconfig-checker/editorconfig-checker.python
     rev: 2.7.2
     hooks:
