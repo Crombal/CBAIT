@@ -12,15 +12,20 @@ python = "3.12.*"
 python-binance = "1.0.*"
 numpy = "1.26.*"
 pandas = "2.1.*"
+pandas-stubs = "2.1.*"
 matplotlib = "3.8.*"
 aiohttp = "3.9.*" # fixed version required for python 3.12
+pydantic = "2.4.*"
+python-json-logger = "2.0.*"
+types-setuptools = "68.2.*"
 
 [tool.poetry.group.dev.dependencies]
-seaborn = "0.12.*"
+seaborn = "0.13.*"
 
 [tool.poetry.group.linters.dependencies]
 ruff = "0.0.*"
 black = "23.10.*"
+mypy = "1.7.*"
 interrogate = "1.5.*"
 yamllint = "1.32.*"
 gitlint = "0.19.*"
@@ -31,9 +36,28 @@ editorconfig-checker = "2.7.*"
 target-version = ['py312']
 line-length = 120
 
+[tool.mypy]
+pretty = true
+strict = true
+disallow_any_generics = true
+disallow_incomplete_defs = true
+disallow_untyped_defs = true
+implicit_reexport = true
+show_error_context = true
+show_error_codes = true
+warn_return_any = true
+warn_unused_configs = true
+
+[[tool.mypy.overrides]]
+ignore_missing_imports = true
+module = [
+    "binance.*",
+]
+
 [tool.ruff]
 target-version = "py312"
 line-length = 120
+preview = true
 select = [
     "F", # pyflakes
     "E", "W", # pycodestyle
@@ -90,7 +114,8 @@ select = [
     "RUF" # Ruff-specific rules
 ]
 ignore = [
-    "D211", "D213", # pydocstyle
+    "D203", "D213", # pydocstyle
+    "CPY001", # flake8-copyright
 ]
 fixable = ["ALL"]
 include = [

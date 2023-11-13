@@ -4,6 +4,7 @@
 
 # Project data
 data/
+configs/
 
 # Cache
 *cache*
