@@ -1,33 +1,21 @@
 """Module to load historical data via Binance API."""
 import logging
-from datetime import UTC, datetime
 from functools import lru_cache
 from pathlib import Path
-from typing import NamedTuple
 
 import pandas as pd
-from binance.client import Client, HistoricalKlinesType
+from binance.client import Client
 
+from src.entities.base_trade_model import BaseTradeModel
 from src.utils.logger import get_logger
 
 logger: logging.Logger = get_logger()
 
 
-class HistoricalDataLoaderConfig(NamedTuple):
-    """HistoricalDataLoader config."""
-
-    symbol: str = "BTCUSDT"
-    interval: str = Client.KLINE_INTERVAL_1HOUR
-    start: str | None = None
-    end: str | None = None
-    limit: int = 1000
-    klines_type: HistoricalKlinesType = HistoricalKlinesType.SPOT
-
-
 class HistoricalDataLoader:
     """Class to load historical data via Binance API."""
 
-    client: Client = None
+    client: Client
 
     def __init__(self: "HistoricalDataLoader", client: Client) -> None:
         """HistoricalDataLoader constructor.
@@ -39,37 +27,37 @@ class HistoricalDataLoader:
 
     def export_historical_data_to_csv(
         self: "HistoricalDataLoader",
-        historical_data_loader_config: HistoricalDataLoaderConfig,
+        base_trade_model: BaseTradeModel,
     ) -> None:
         """Export historical data to csv file.
 
-        :param historical_data_loader_config: config for loading historical data
-        :type historical_data_loader_config: HistoricalDataLoaderConfig
+        :param base_trade_model: base trade model
+        :type base_trade_model: BaseTradeModel
         """
-        filename: Path = self._get_csv_filename(historical_data_loader_config)
-        data_dir_path: Path = self._get_data_dir_path(historical_data_loader_config)
+        filename: Path = self._get_csv_filename(base_trade_model)
+        data_dir_path: Path = self._get_data_dir_path(base_trade_model)
 
         self._create_data_dir(data_dir_path)
 
-        historical_data: pd.DataFrame = self._load_historical_data(historical_data_loader_config)
+        historical_data: pd.DataFrame = self._load_historical_data(base_trade_model)
         historical_data.to_csv(f"{data_dir_path}/{filename}")
 
         logger.info("Exported historical data to %s/%s", data_dir_path, filename)
 
     def get_historical_data_from_csv(
         self: "HistoricalDataLoader",
-        historical_data_loader_config: HistoricalDataLoaderConfig,
+        base_trade_model: BaseTradeModel,
     ) -> pd.DataFrame:
         """Get historical data from csv file.
 
-        :param historical_data_loader_config: config for loading historical data
-        :type historical_data_loader_config: HistoricalDataLoaderConfig
+        :param base_trade_model: base trade model
+        :type base_trade_model: BaseTradeModel
 
         :return: pd.DataFrame of values DOHLCV (Date, Open, High, Low, Close, Volume)
         :rtype: pd.DataFrame
         """
-        filename = self._get_csv_filename(historical_data_loader_config)
-        data_dir_path = self._get_data_dir_path(historical_data_loader_config)
+        filename = self._get_csv_filename(base_trade_model)
+        data_dir_path = self._get_data_dir_path(base_trade_model)
 
         historical_data = pd.read_csv(f"{data_dir_path}/{filename}")
         historical_data["Date"] = pd.to_datetime(historical_data["Date"])
@@ -78,21 +66,21 @@ class HistoricalDataLoader:
 
     def get_historical_data_from_api(
         self: "HistoricalDataLoader",
-        historical_data_loader_config: HistoricalDataLoaderConfig,
+        base_trade_model: BaseTradeModel,
     ) -> pd.DataFrame:
         """Get historical data from Binance as Pandas DataFrame.
 
-        :param historical_data_loader_config: config for loading historical data
-        :type historical_data_loader_config: HistoricalDataLoaderConfig
+        :param base_trade_model: base trade model
+        :type base_trade_model: BaseTradeModel
 
         :return: pd.DataFrame of values DOHLCV (Date, Open, High, Low, Close, Volume)
         :rtype: pd.DataFrame
         """
-        return self._load_historical_data(historical_data_loader_config)
+        return self._load_historical_data(base_trade_model)
 
     def _load_historical_data(
         self: "HistoricalDataLoader",
-        historical_data_loader_config: HistoricalDataLoaderConfig,
+        base_trade_model: BaseTradeModel,
     ) -> pd.DataFrame:
         """Load Historical Klines from Binance (spot or futures) to Pandas DataFrame.
 
@@ -100,19 +88,19 @@ class HistoricalDataLoader:
 
         If using offset strings for dates add "UTC" to date string e.g. "now UTC", "11 hours ago UTC"
 
-        :param historical_data_loader_config: config for loading historical data
-        :type historical_data_loader_config: HistoricalDataLoaderConfig
+        :param base_trade_model: base trade model
+        :type base_trade_model: BaseTradeModel
 
         :return: pd.DataFrame of values DOHLCV (Date, Open, High, Low, Close, Volume)
         :rtype: pd.DataFrame
         """
         historical_klines: list[dict[str, str]] = self.client.get_historical_klines(
-            symbol=historical_data_loader_config.symbol,
-            interval=historical_data_loader_config.interval,
-            start_str=historical_data_loader_config.start,
-            end_str=historical_data_loader_config.end,
-            limit=historical_data_loader_config.limit,
-            klines_type=historical_data_loader_config.klines_type,
+            symbol=base_trade_model.symbol,
+            interval=base_trade_model.interval,
+            start_str=base_trade_model.get_start_datetime(),
+            end_str=base_trade_model.end,
+            limit=base_trade_model.limit,
+            klines_type=base_trade_model.klines_type,
         )
 
         columns_names: list[str] = [
@@ -141,58 +129,35 @@ class HistoricalDataLoader:
 
         return historical_data
 
-    def _get_csv_filename(
-        self: "HistoricalDataLoader",
-        historical_data_loader_config: HistoricalDataLoaderConfig,
-    ) -> Path:
+    @staticmethod
+    @lru_cache
+    def _get_csv_filename(base_trade_model: BaseTradeModel) -> Path:
         """Generate csv file name.
 
-        :param historical_data_loader_config: config for loading historical data
-        :type historical_data_loader_config: HistoricalDataLoaderConfig
+        :param base_trade_model: base trade model
+        :type base_trade_model: BaseTradeModel
 
         :return: csv file name
         :rtype: Path
         """
-        start_datetime = (
-            (
-                datetime.fromtimestamp(
-                    self.client._get_earliest_valid_timestamp(  # noqa: SLF001
-                        historical_data_loader_config.symbol,
-                        historical_data_loader_config.interval,
-                        historical_data_loader_config.klines_type,
-                    )
-                    / 1000,
-                    tz=UTC,
-                ).strftime("%Y-%m-%dT%H:%M:%SZ")
-            )
-            if historical_data_loader_config.start is None
-            else (
-                datetime.strptime(historical_data_loader_config.start, "%Y-%m-%d %H:%M:%S")
-                .replace(tzinfo=UTC)
-                .strftime("%Y-%m-%dT%H:%M:%SZ")
-            )
-        )
-
-        end_datetime = "latest" if historical_data_loader_config.end is None else historical_data_loader_config.end
-
-        return Path(f"{start_datetime}_{end_datetime}.csv")
+        return Path(f"{base_trade_model.get_start_datetime()}_{base_trade_model.end}.csv")
 
     @staticmethod
     @lru_cache
-    def _get_data_dir_path(historical_data_loader_config: HistoricalDataLoaderConfig) -> Path:
+    def _get_data_dir_path(base_trade_model: BaseTradeModel) -> Path:
         """Generate data directory path.
 
-        :param historical_data_loader_config: config for loading historical data
-        :type historical_data_loader_config: HistoricalDataLoaderConfig
+        :param base_trade_model: base trade model
+        :type base_trade_model: BaseTradeModel
 
         :return: data directory path
         :rtype: str
         """
         return Path(
             f"data/"
-            f"{historical_data_loader_config.klines_type.name}/"
-            f"{historical_data_loader_config.symbol}/"
-            f"{historical_data_loader_config.interval}",
+            f"{base_trade_model.klines_type.name}/"
+            f"{base_trade_model.symbol}/"
+            f"{base_trade_model.interval}",
         )
 
     @staticmethod
