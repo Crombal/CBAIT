@@ -1,6 +1,5 @@
 """Module to load historical data via Binance API."""
 import logging
-from functools import lru_cache
 from pathlib import Path
 
 import pandas as pd
@@ -130,7 +129,6 @@ class HistoricalDataLoader:
         return historical_data
 
     @staticmethod
-    @lru_cache
     def _get_csv_filename(base_trade_model: BaseTradeModel) -> Path:
         """Generate csv file name.
 
@@ -140,10 +138,12 @@ class HistoricalDataLoader:
         :return: csv file name
         :rtype: Path
         """
-        return Path(f"{base_trade_model.get_start_datetime()}_{base_trade_model.end}.csv")
+        start_datetime = base_trade_model.get_start_datetime()
+        end_datetime = "latest" if base_trade_model.end is None else base_trade_model.end
+
+        return Path(f"{start_datetime}_{end_datetime}.csv")
 
     @staticmethod
-    @lru_cache
     def _get_data_dir_path(base_trade_model: BaseTradeModel) -> Path:
         """Generate data directory path.
 

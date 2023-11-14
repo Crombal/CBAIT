@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 
 from binance import Client
 from binance.enums import HistoricalKlinesType
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from src.utils.earliest_valid_timestamp_loader import get_earliest_valid_timestamp
 
@@ -29,11 +29,13 @@ class BaseTradeModel(BaseModel):
         Type of klines data to retrieve.
     """
 
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     client: Client = None
     symbol: str = "BTCUSDT"
     interval: str = Client.KLINE_INTERVAL_1HOUR
     start: str | None = None
-    end: str = "latest"
+    end: str | None = None
     limit: int = 1000
     klines_type: HistoricalKlinesType = HistoricalKlinesType.SPOT
 
