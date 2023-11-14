@@ -12,7 +12,30 @@ logger: logging.Logger = get_logger()
 
 
 class HistoricalDataLoader:
-    """Class to load historical data via Binance API."""
+    """Class to load historical data via Binance API.
+
+    Attributes
+    ----------
+    client: Client
+        Binance API client
+
+    Methods
+    -------
+    export_historical_data_to_csv:
+        Export historical data to csv file.
+    get_historical_data_from_csv:
+        Get historical data from csv file.
+    get_historical_data_from_api:
+        Get historical data from Binance as Pandas DataFrame.
+    _load_historical_data:
+        Load Historical Klines from Binance (spot or futures) to Pandas DataFrame.
+    _get_csv_filename:
+        Generate csv file name.
+    _get_data_dir_path:
+        Generate data directory path.
+    _create_data_dir:
+        Create data directory if not exists.
+    """
 
     client: Client
 
