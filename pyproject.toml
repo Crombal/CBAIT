@@ -33,7 +33,7 @@ toml-sort = "0.23.*"
 editorconfig-checker = "2.7.*"
 
 [tool.black]
-target-version = ['py312']
+target-version = ["py312"]
 line-length = 120
 
 [tool.mypy]
@@ -116,6 +116,7 @@ select = [
 ignore = [
     "D203", "D213", # pydocstyle
     "CPY001", # flake8-copyright
+    "E203", # whitespace-before-punctuation
 ]
 fixable = ["ALL"]
 include = [

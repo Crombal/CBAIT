@@ -27,6 +27,11 @@ class BaseTradeModel(BaseModel):
         Default 1000; max 1000.
     klines_type: HistoricalKlinesType
         Type of klines data to retrieve.
+
+    Methods
+    -------
+    get_start_datetime:
+        Get start datetime.
     """
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
